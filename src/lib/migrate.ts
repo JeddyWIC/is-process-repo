@@ -34,6 +34,16 @@ export async function migrate(url?: string, authToken?: string) {
       filename TEXT NOT NULL,
       data TEXT NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS attachments (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      process_id INTEGER NOT NULL REFERENCES processes(id) ON DELETE CASCADE,
+      filename TEXT NOT NULL,
+      mime_type TEXT NOT NULL,
+      size INTEGER NOT NULL,
+      data TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
   `);
 
   console.log("Migration complete");

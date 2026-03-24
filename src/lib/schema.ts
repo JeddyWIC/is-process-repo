@@ -40,10 +40,25 @@ export const images = sqliteTable("images", {
   data: text("data").notNull(), // base64 encoded
 });
 
+export const attachments = sqliteTable("attachments", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  processId: integer("process_id")
+    .notNull()
+    .references(() => processes.id, { onDelete: "cascade" }),
+  filename: text("filename").notNull(),
+  mimeType: text("mime_type").notNull(),
+  size: integer("size").notNull(), // bytes
+  data: text("data").notNull(), // base64 encoded
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // Relations
 export const processesRelations = relations(processes, ({ many }) => ({
   tags: many(processTags),
   images: many(images),
+  attachments: many(attachments),
 }));
 
 export const tagsRelations = relations(tags, ({ many }) => ({
@@ -64,6 +79,13 @@ export const processTagsRelations = relations(processTags, ({ one }) => ({
 export const imagesRelations = relations(images, ({ one }) => ({
   process: one(processes, {
     fields: [images.processId],
+    references: [processes.id],
+  }),
+}));
+
+export const attachmentsRelations = relations(attachments, ({ one }) => ({
+  process: one(processes, {
+    fields: [attachments.processId],
     references: [processes.id],
   }),
 }));

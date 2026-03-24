@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import PasswordGate from "@/components/PasswordGate";
 import RichEditor from "@/components/RichEditor";
 import TagInput from "@/components/TagInput";
+import FileAttachments, { uploadAttachments } from "@/components/FileAttachments";
 
 const inputClass =
   "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700";
@@ -19,19 +20,26 @@ function EditForm() {
   const [category, setCategory] = useState("GENERAL");
   const [content, setContent] = useState("");
   const [tagNames, setTagNames] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
+  const [existingAttachments, setExistingAttachments] = useState<
+    { id: number; filename: string; mimeType: string; size: number }[]
+  >([]);
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    fetch(`/api/processes/${id}`)
-      .then((r) => r.json())
-      .then((data) => {
+    Promise.all([
+      fetch(`/api/processes/${id}`).then((r) => r.json()),
+      fetch(`/api/attachments?processId=${id}`).then((r) => r.json()),
+    ])
+      .then(([data, attachData]) => {
         setTitle(data.title);
         setAuthor(data.author);
         setCategory(data.category);
         setContent(data.content);
         setTagNames(data.tags || []);
+        setExistingAttachments(Array.isArray(attachData) ? attachData : []);
         setLoading(false);
       })
       .catch((err) => {
@@ -59,6 +67,11 @@ function EditForm() {
       if (!res.ok) {
         const data = await res.json();
         throw new Error(data.error || "Failed to save");
+      }
+
+      // Upload any pending file attachments
+      if (pendingFiles.length > 0) {
+        await uploadAttachments(parseInt(id), pendingFiles);
       }
 
       router.push(`/process/${id}`);
@@ -143,6 +156,17 @@ function EditForm() {
           {content !== undefined && (
             <RichEditor content={content} onChange={setContent} />
           )}
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Attachments
+          </label>
+          <FileAttachments
+            processId={parseInt(id)}
+            existingAttachments={existingAttachments}
+            onAttachmentsChange={setPendingFiles}
+          />
         </div>
 
         <div className="flex gap-3">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import PasswordGate from "@/components/PasswordGate";
 import RichEditor from "@/components/RichEditor";
 import TagInput from "@/components/TagInput";
+import FileAttachments, { uploadAttachments } from "@/components/FileAttachments";
 
 const inputClass =
   "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700";
@@ -16,6 +17,7 @@ function ProcessForm() {
   const [category, setCategory] = useState("GENERAL");
   const [content, setContent] = useState("");
   const [tagNames, setTagNames] = useState<string[]>([]);
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -41,6 +43,12 @@ function ProcessForm() {
       }
 
       const process = await res.json();
+
+      // Upload any pending file attachments
+      if (pendingFiles.length > 0) {
+        await uploadAttachments(process.id, pendingFiles);
+      }
+
       router.push(`/process/${process.id}`);
     } catch (err) {
       setError(String(err));
@@ -117,6 +125,13 @@ function ProcessForm() {
             Content *
           </label>
           <RichEditor content={content} onChange={setContent} />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Attachments
+          </label>
+          <FileAttachments onAttachmentsChange={setPendingFiles} />
         </div>
 
         <div className="flex gap-3">
