@@ -40,8 +40,13 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
   if (!authenticated) {
     return (
       <div className="max-w-md mx-auto mt-20 p-8 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Editor Access Required</h2>
-        <p className="text-gray-600 dark:text-gray-300 mb-6">Enter the shared password to create or edit processes.</p>
+        <div className="flex justify-center mb-4">
+          <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold text-lg">IS</span>
+          </div>
+        </div>
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-2 text-center">Industrial Systems</h2>
+        <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">Enter the password to access the Process Repository.</p>
         <form onSubmit={handleSubmit}>
           <input
             type="password"
@@ -56,7 +61,7 @@ export default function PasswordGate({ children }: { children: React.ReactNode }
             type="submit"
             className="w-full mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
           >
-            Unlock Editor
+            Enter
           </button>
         </form>
       </div>

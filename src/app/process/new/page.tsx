@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import PasswordGate from "@/components/PasswordGate";
 import RichEditor from "@/components/RichEditor";
 import TagInput from "@/components/TagInput";
 import FileAttachments, { uploadAttachments } from "@/components/FileAttachments";
@@ -156,9 +155,5 @@ function ProcessForm() {
 }
 
 export default function NewProcessPage() {
-  return (
-    <PasswordGate>
-      <ProcessForm />
-    </PasswordGate>
-  );
+  return <ProcessForm />;
 }

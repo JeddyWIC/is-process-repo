@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import PasswordGate from "@/components/PasswordGate";
 import RichEditor from "@/components/RichEditor";
 import TagInput from "@/components/TagInput";
 import FileAttachments, { uploadAttachments } from "@/components/FileAttachments";
@@ -191,9 +190,5 @@ function EditForm() {
 }
 
 export default function EditProcessPage() {
-  return (
-    <PasswordGate>
-      <EditForm />
-    </PasswordGate>
-  );
+  return <EditForm />;
 }
