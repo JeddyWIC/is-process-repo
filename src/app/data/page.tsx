@@ -52,20 +52,31 @@ async function getTagStats() {
 async function getTagCooccurrences() {
   const { db } = await import("@/lib/db");
   const { tags, processTags } = await import("@/lib/schema");
-  const { eq, sql } = await import("drizzle-orm");
+  const { sql } = await import("drizzle-orm");
 
-  // Find tags that appear together on the same process
-  const rows = await db.all<{ tag1: string; tag2: string; shared: number }>(sql`
+  // Find tags that appear together on the same process using raw SQL via Drizzle
+  const pt = processTags;
+  const t = tags;
+  const result = await db.run(sql`
     SELECT t1.name as tag1, t2.name as tag2, count(*) as shared
-    FROM ${processTags} pt1
-    JOIN ${processTags} pt2 ON pt1.process_id = pt2.process_id AND pt1.tag_id < pt2.tag_id
-    JOIN ${tags} t1 ON pt1.tag_id = t1.id
-    JOIN ${tags} t2 ON pt2.tag_id = t2.id
+    FROM ${pt} pt1
+    JOIN ${pt} pt2 ON pt1.process_id = pt2.process_id AND pt1.tag_id < pt2.tag_id
+    JOIN ${t} t1 ON pt1.tag_id = t1.id
+    JOIN ${t} t2 ON pt2.tag_id = t2.id
     GROUP BY t1.name, t2.name
     ORDER BY shared DESC
   `);
 
-  return rows;
+  // libsql .run() returns { rows, columns, ... }
+  const raw = result as unknown as { columns: string[]; rows: unknown[][] };
+  if (raw.columns && raw.rows) {
+    return raw.rows.map((row) => ({
+      tag1: row[raw.columns.indexOf("tag1")] as string,
+      tag2: row[raw.columns.indexOf("tag2")] as string,
+      shared: row[raw.columns.indexOf("shared")] as number,
+    }));
+  }
+  return [];
 }
 
 export const dynamic = "force-dynamic";

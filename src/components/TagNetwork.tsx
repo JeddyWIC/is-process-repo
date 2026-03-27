@@ -43,10 +43,10 @@ export default function TagNetwork({
   useEffect(() => {
     if (!tags.length) return;
 
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
+    const canvasEl = canvasRef.current;
+    if (!canvasEl) return;
+    const canvas = canvasEl;
+    const ctx = canvas.getContext("2d")!;
 
     const dpr = window.devicePixelRatio || 1;
     const rect = canvas.getBoundingClientRect();
