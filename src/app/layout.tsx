@@ -56,6 +56,12 @@ export default function RootLayout({
                   Search
                 </Link>
                 <Link
+                  href="/data"
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+                >
+                  Data
+                </Link>
+                <Link
                   href="/process/new"
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-medium transition-colors"
                 >

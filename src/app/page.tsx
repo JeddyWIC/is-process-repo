@@ -1,6 +1,6 @@
 import SearchBar from "@/components/SearchBar";
 import TagCloud from "@/components/TagCloud";
-import ProcessCard from "@/components/ProcessCard";
+import CategoryFilter from "@/components/CategoryFilter";
 
 async function getRecentProcesses() {
   try {
@@ -82,27 +82,13 @@ export default async function Home() {
         <SearchBar />
       </div>
 
-      {/* Tag Cloud */}
-      {popularTags.length > 0 && (
-        <section className="mb-12">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
-            Popular Tags
-          </h2>
-          <TagCloud tags={popularTags} />
-        </section>
-      )}
-
-      {/* Recent Processes */}
-      <section>
+      {/* Recent Processes with Category Filter/Sort */}
+      <section className="mb-12">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
           {recentProcesses.length > 0 ? "Recent Processes" : "Getting Started"}
         </h2>
         {recentProcesses.length > 0 ? (
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {recentProcesses.map((p) => (
-              <ProcessCard key={p.id} {...p} />
-            ))}
-          </div>
+          <CategoryFilter processes={recentProcesses} />
         ) : (
           <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -117,6 +103,16 @@ export default async function Home() {
           </div>
         )}
       </section>
+
+      {/* Tag Cloud — now below processes */}
+      {popularTags.length > 0 && (
+        <section>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
+            Popular Tags
+          </h2>
+          <TagCloud tags={popularTags} />
+        </section>
+      )}
     </div>
   );
 }
