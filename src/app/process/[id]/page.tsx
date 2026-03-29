@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { processes, tags, processTags, attachments } from "@/lib/schema";
-import { eq } from "drizzle-orm";
+import { eq, ne, inArray, sql, and } from "drizzle-orm";
 
 const categoryLabels: Record<string, string> = {
   FOOD_BEV: "Food & Beverage",
@@ -46,6 +46,49 @@ export default async function ProcessPage({
     })
     .from(attachments)
     .where(eq(attachments.processId, processId));
+
+  // Find related processes that share tags with this one
+  const tagIds = tagNames.length > 0
+    ? await db
+        .select({ id: tags.id })
+        .from(tags)
+        .where(inArray(tags.name, tagNames))
+    : [];
+
+  const relatedProcesses = tagIds.length > 0
+    ? await db
+        .select({
+          id: processes.id,
+          title: processes.title,
+          author: processes.author,
+          category: processes.category,
+          updatedAt: processes.updatedAt,
+          sharedTagCount: sql<number>`count(${processTags.tagId})`.as("shared_tag_count"),
+        })
+        .from(processes)
+        .innerJoin(processTags, eq(processTags.processId, processes.id))
+        .where(
+          and(
+            ne(processes.id, processId),
+            inArray(processTags.tagId, tagIds.map((t) => t.id))
+          )
+        )
+        .groupBy(processes.id)
+        .orderBy(sql`shared_tag_count DESC`)
+        .limit(5)
+    : [];
+
+  // Fetch tags for related processes
+  const relatedWithTags = await Promise.all(
+    relatedProcesses.map(async (rp) => {
+      const rpTags = await db
+        .select({ name: tags.name })
+        .from(tags)
+        .innerJoin(processTags, eq(processTags.tagId, tags.id))
+        .where(eq(processTags.processId, rp.id));
+      return { ...rp, tags: rpTags.map((t) => t.name) };
+    })
+  );
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8">
@@ -173,6 +216,61 @@ export default async function ProcessPage({
           </div>
         )}
       </article>
+
+      {/* Related Processes */}
+      {relatedWithTags.length > 0 && (
+        <section className="mt-8">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+            Related Processes
+          </h2>
+          <div className="grid gap-3">
+            {relatedWithTags.map((rp) => (
+              <Link
+                key={rp.id}
+                href={`/process/${rp.id}`}
+                className="block border border-gray-200 dark:border-gray-700 rounded-lg p-4 hover:shadow-md hover:border-blue-300 dark:hover:border-blue-600 transition-all bg-white dark:bg-gray-800"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white">
+                    {rp.title}
+                  </h3>
+                  <span
+                    className={`shrink-0 px-2 py-0.5 rounded text-xs font-medium ${
+                      rp.category === "FOOD_BEV"
+                        ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+                        : rp.category === "AIRPORT"
+                        ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200"
+                        : "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200"
+                    }`}
+                  >
+                    {categoryLabels[rp.category] || rp.category}
+                  </span>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  by {rp.author} &middot; {rp.sharedTagCount} shared{" "}
+                  {rp.sharedTagCount === 1 ? "tag" : "tags"}
+                </p>
+                {rp.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 mt-2">
+                    {rp.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className={`px-2 py-0.5 text-xs rounded-full ${
+                          tagNames.includes(tag)
+                            ? "bg-blue-100 text-blue-700 dark:bg-blue-900/70 dark:text-blue-300"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400"
+                        }`}
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
