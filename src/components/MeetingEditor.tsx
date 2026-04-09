@@ -6,6 +6,7 @@ import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
 import { Mark, mergeAttributes } from "@tiptap/core";
+import { CellSelection } from "@tiptap/pm/tables";
 import { useCallback, useState } from "react";
 
 const StatusColor = Mark.create({
@@ -45,6 +46,32 @@ function MenuBar({ editor }: { editor: EditorType }) {
   if (!editor) return null;
 
   const [showTableControls, setShowTableControls] = useState(false);
+
+  const selectRow = useCallback(() => {
+    const { state, dispatch } = editor.view;
+    const { $from } = state.selection;
+    // Walk up to find the table row
+    for (let d = $from.depth; d > 0; d--) {
+      const node = $from.node(d);
+      if (node.type.name === "tableRow") {
+        const rowStart = $from.before(d);
+        const map = node;
+        // Select from first cell to last cell in this row
+        const firstCellPos = rowStart + 1;
+        const lastCellPos = rowStart + map.nodeSize - 1;
+        const $first = state.doc.resolve(firstCellPos);
+        const $last = state.doc.resolve(lastCellPos - 1);
+        try {
+          const cellSel = CellSelection.create(state.doc, $first.pos, $last.pos);
+          dispatch(state.tr.setSelection(cellSel));
+        } catch {
+          // fallback: just select first cell
+          editor.chain().focus().setCellSelection({ anchorCell: firstCellPos, headCell: firstCellPos }).run();
+        }
+        break;
+      }
+    }
+  }, [editor]);
 
   const addTable = useCallback(() => {
     editor
@@ -125,6 +152,9 @@ function MenuBar({ editor }: { editor: EditorType }) {
       </button>
       {(isInTable || showTableControls) && (
         <>
+          <button type="button" onClick={selectRow} className={btnClass(false)} title="Select entire row for formatting">
+            Sel Row
+          </button>
           <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className={btnClass(false)}>
             +Row
           </button>
@@ -193,7 +223,7 @@ export default function MeetingEditor({ content, onChange }: MeetingEditorProps)
       StarterKit,
       TaskList,
       TaskItem.configure({ nested: true }),
-      Table.configure({ resizable: true }),
+      Table.configure({ resizable: false, allowTableNodeSelection: true }),
       TableRow,
       TableCell,
       TableHeader,
