@@ -44,6 +44,17 @@ export async function migrate(url?: string, authToken?: string) {
       data TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS meetings (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      date TEXT NOT NULL,
+      time TEXT,
+      location TEXT,
+      facilitator TEXT,
+      attendees TEXT,
+      content TEXT NOT NULL,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
   `);
 
   console.log("Migration complete");

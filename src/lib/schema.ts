@@ -54,6 +54,22 @@ export const attachments = sqliteTable("attachments", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const meetings = sqliteTable("meetings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  date: text("date").notNull(), // YYYY-MM-DD
+  time: text("time"),
+  location: text("location"),
+  facilitator: text("facilitator"),
+  attendees: text("attendees"), // JSON array of strings
+  content: text("content").notNull(), // HTML with checkboxes
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 // Relations
 export const processesRelations = relations(processes, ({ many }) => ({
   tags: many(processTags),

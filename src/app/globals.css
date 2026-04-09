@@ -98,3 +98,106 @@ body {
   height: auto;
   border-radius: 0.5rem;
 }
+
+/* Task list (checkboxes) styles */
+.tiptap ul[data-type="taskList"],
+.meeting-content ul[data-type="taskList"] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap ul[data-type="taskList"] li,
+.meeting-content ul[data-type="taskList"] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.tiptap ul[data-type="taskList"] li label,
+.meeting-content ul[data-type="taskList"] li label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tiptap ul[data-type="taskList"] li input[type="checkbox"],
+.meeting-content input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  cursor: pointer;
+  accent-color: #2563eb;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+.tiptap ul[data-type="taskList"] li[data-checked="true"] > div > p,
+.meeting-content ul[data-type="taskList"] li[data-checked="true"] > div > p,
+.meeting-content ul[data-type="taskList"] li[data-checked="true"] {
+  text-decoration: line-through;
+  color: #9ca3af;
+}
+
+/* Table styles for editor and rendered content */
+.tiptap table,
+.meeting-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1rem 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.tiptap table th,
+.tiptap table td,
+.meeting-content table th,
+.meeting-content table td {
+  border: 1px solid #d1d5db;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  min-width: 80px;
+  vertical-align: top;
+}
+
+.dark .tiptap table th,
+.dark .tiptap table td,
+.dark .meeting-content table th,
+.dark .meeting-content table td {
+  border-color: #4b5563;
+}
+
+.tiptap table th,
+.meeting-content table th {
+  background: #f3f4f6;
+  font-weight: 600;
+  font-size: 0.875rem;
+}
+
+.dark .tiptap table th,
+.dark .meeting-content table th {
+  background: #1f2937;
+}
+
+.tiptap table td,
+.meeting-content table td {
+  font-size: 0.875rem;
+}
+
+/* Status colors for meeting notes */
+.meeting-content .status-green,
+.tiptap .status-green {
+  color: #16a34a;
+  font-weight: 600;
+}
+
+.meeting-content .status-yellow,
+.tiptap .status-yellow {
+  color: #ca8a04;
+  font-weight: 600;
+}
+
+.meeting-content .status-red,
+.tiptap .status-red {
+  color: #dc2626;
+  font-weight: 600;
+}
