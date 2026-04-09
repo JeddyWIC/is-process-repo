@@ -104,36 +104,50 @@ body {
 .meeting-content ul[data-type="taskList"] {
   list-style: none;
   padding-left: 0;
+  margin: 0.5rem 0;
 }
 
 .tiptap ul[data-type="taskList"] li,
 .meeting-content ul[data-type="taskList"] li {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   gap: 0.5rem;
-  padding: 0.25rem 0;
+  padding: 0.15rem 0;
 }
 
-.tiptap ul[data-type="taskList"] li label,
-.meeting-content ul[data-type="taskList"] li label {
+.tiptap ul[data-type="taskList"] li > label,
+.meeting-content ul[data-type="taskList"] li > label {
   display: flex;
-  align-items: center;
+  align-items: baseline;
   gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.tiptap ul[data-type="taskList"] li > div,
+.meeting-content ul[data-type="taskList"] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tiptap ul[data-type="taskList"] li > div > p,
+.meeting-content ul[data-type="taskList"] li > div > p {
+  margin: 0;
 }
 
 .tiptap ul[data-type="taskList"] li input[type="checkbox"],
 .meeting-content input[type="checkbox"] {
-  width: 1.1rem;
-  height: 1.1rem;
+  width: 1rem;
+  height: 1rem;
   cursor: pointer;
   accent-color: #2563eb;
   flex-shrink: 0;
-  margin-top: 0.15rem;
+  position: relative;
+  top: 0.1em;
 }
 
 .tiptap ul[data-type="taskList"] li[data-checked="true"] > div > p,
 .meeting-content ul[data-type="taskList"] li[data-checked="true"] > div > p,
-.meeting-content ul[data-type="taskList"] li[data-checked="true"] {
+.meeting-content ul[data-type="taskList"] li[data-checked="true"] > label > span {
   text-decoration: line-through;
   color: #9ca3af;
 }

@@ -53,7 +53,7 @@ function MenuBar({ editor }: { editor: EditorType }) {
   const isInTable = editor.isActive("table");
 
   return (
-    <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+    <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg sticky top-16 z-40">
       {/* Text formatting */}
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive("bold"))}>
         B
