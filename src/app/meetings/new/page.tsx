@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import PasswordGate from "@/components/PasswordGate";
 import MeetingEditor from "@/components/MeetingEditor";
@@ -26,6 +26,16 @@ const DEFAULT_ATTENDEES = [
   "Williams",
 ];
 
+interface LastMeeting {
+  id: number;
+  date: string;
+  time: string | null;
+  location: string | null;
+  facilitator: string | null;
+  attendees: string[];
+  content: string;
+}
+
 function MeetingForm() {
   const router = useRouter();
   const today = new Date().toISOString().split("T")[0];
@@ -39,6 +49,44 @@ function MeetingForm() {
   const [content, setContent] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [lastMeeting, setLastMeeting] = useState<LastMeeting | null>(null);
+  const [editorKey, setEditorKey] = useState(0);
+
+  // Fetch last meeting for "copy" feature
+  useEffect(() => {
+    fetch("/api/meetings")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          // Get full content of most recent meeting
+          fetch(`/api/meetings/${data[0].id}`)
+            .then((r) => r.json())
+            .then((full) => setLastMeeting(full))
+            .catch(() => {});
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const copyFromLast = () => {
+    if (!lastMeeting) return;
+
+    // Uncheck all checkboxes in the copied content
+    const unchecked = lastMeeting.content
+      .replace(/data-checked="true"/g, 'data-checked="false"')
+      .replace(/checked="checked"/g, "")
+      .replace(/checked>/g, ">");
+
+    setContent(unchecked);
+    setTime(lastMeeting.time || "9:30 AM");
+    setLocation(lastMeeting.location || "Keystone + Teams");
+    setFacilitator(lastMeeting.facilitator || "Eddy");
+    if (lastMeeting.attendees?.length > 0) {
+      setAttendees(lastMeeting.attendees);
+    }
+    // Force re-mount of editor with new content
+    setEditorKey((k) => k + 1);
+  };
 
   const toggleAttendee = (name: string) => {
     setAttendees((prev) =>
@@ -92,9 +140,20 @@ function MeetingForm() {
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        New Meeting Notes
-      </h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+          New Meeting Notes
+        </h1>
+        {lastMeeting && (
+          <button
+            type="button"
+            onClick={copyFromLast}
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
+          >
+            Copy from {new Date(lastMeeting.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </button>
+        )}
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
@@ -214,7 +273,7 @@ function MeetingForm() {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Meeting Notes *
           </label>
-          <MeetingEditor content={content} onChange={setContent} />
+          <MeetingEditor key={editorKey} content={content} onChange={setContent} />
         </div>
 
         <div className="flex gap-3">

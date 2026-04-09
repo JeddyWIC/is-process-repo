@@ -5,7 +5,7 @@ import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 
 interface MeetingEditorProps {
   content: string;
@@ -17,13 +17,31 @@ type EditorType = ReturnType<typeof useEditor>;
 function MenuBar({ editor }: { editor: EditorType }) {
   if (!editor) return null;
 
+  const [showTableControls, setShowTableControls] = useState(false);
+
   const addTable = useCallback(() => {
     editor
       .chain()
       .focus()
       .insertTable({ rows: 3, cols: 4, withHeaderRow: true })
       .run();
+    setShowTableControls(true);
   }, [editor]);
+
+  const insertStatus = useCallback(
+    (color: "green" | "yellow" | "red") => {
+      const label = color.charAt(0).toUpperCase() + color.slice(1);
+      const colorClass = `status-${color}`;
+      editor
+        .chain()
+        .focus()
+        .insertContent(
+          `<span class="${colorClass}">${label}</span>&nbsp;`
+        )
+        .run();
+    },
+    [editor]
+  );
 
   const btnClass = (active: boolean) =>
     `px-2 py-1 rounded text-sm font-medium transition-colors ${
@@ -32,8 +50,11 @@ function MenuBar({ editor }: { editor: EditorType }) {
         : "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
     }`;
 
+  const isInTable = editor.isActive("table");
+
   return (
     <div className="flex flex-wrap gap-1 p-2 border-b border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-800 rounded-t-lg">
+      {/* Text formatting */}
       <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={btnClass(editor.isActive("bold"))}>
         B
       </button>
@@ -41,6 +62,8 @@ function MenuBar({ editor }: { editor: EditorType }) {
         I
       </button>
       <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      {/* Headings */}
       <button type="button" onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()} className={btnClass(editor.isActive("heading", { level: 2 }))}>
         H2
       </button>
@@ -48,39 +71,84 @@ function MenuBar({ editor }: { editor: EditorType }) {
         H3
       </button>
       <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      {/* Lists & Checkboxes */}
       <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={btnClass(editor.isActive("bulletList"))}>
         &bull; List
       </button>
       <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={btnClass(editor.isActive("orderedList"))}>
         1. List
       </button>
-      <button type="button" onClick={() => editor.chain().focus().toggleTaskList().run()} className={btnClass(editor.isActive("taskList"))}>
-        &#9744; Check
+      <button
+        type="button"
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        className={`px-2 py-1 rounded text-sm font-medium transition-colors ${
+          editor.isActive("taskList")
+            ? "bg-blue-600 text-white"
+            : "bg-green-50 text-green-700 hover:bg-green-100 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 border border-green-300 dark:border-green-700"
+        }`}
+      >
+        &#9745; To-Do
       </button>
       <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      {/* Table controls */}
       <button type="button" onClick={addTable} className={btnClass(false)}>
-        Table
+        + Table
       </button>
-      {editor.isActive("table") && (
+      {(isInTable || showTableControls) && (
         <>
-          <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className={btnClass(false)}>
-            +Col
-          </button>
           <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className={btnClass(false)}>
             +Row
           </button>
-          <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className={btnClass(false)}>
-            -Col
+          <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className={btnClass(false)}>
+            +Col
           </button>
           <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className={btnClass(false)}>
             -Row
           </button>
-          <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className={btnClass(false)}>
+          <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className={btnClass(false)}>
+            -Col
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              editor.chain().focus().deleteTable().run();
+              setShowTableControls(false);
+            }}
+            className="px-2 py-1 rounded text-sm font-medium bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+          >
             Del Table
           </button>
         </>
       )}
       <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      {/* Status colors */}
+      <button
+        type="button"
+        onClick={() => insertStatus("green")}
+        className="px-2 py-1 rounded text-sm font-bold bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/40 dark:text-green-400"
+      >
+        Green
+      </button>
+      <button
+        type="button"
+        onClick={() => insertStatus("yellow")}
+        className="px-2 py-1 rounded text-sm font-bold bg-yellow-100 text-yellow-700 hover:bg-yellow-200 dark:bg-yellow-900/40 dark:text-yellow-400"
+      >
+        Yellow
+      </button>
+      <button
+        type="button"
+        onClick={() => insertStatus("red")}
+        className="px-2 py-1 rounded text-sm font-bold bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/40 dark:text-red-400"
+      >
+        Red
+      </button>
+      <div className="w-px bg-gray-300 dark:bg-gray-600 mx-1" />
+
+      {/* Other */}
       <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btnClass(editor.isActive("blockquote"))}>
         Quote
       </button>
