@@ -187,7 +187,7 @@ export default function MeetingEditor({ content, onChange }: MeetingEditorProps)
   }
 
   return (
-    <div className="border border-gray-300 dark:border-gray-600 rounded-lg overflow-hidden bg-white dark:bg-gray-900">
+    <div className="border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900">
       <MenuBar editor={editor} />
       <EditorContent editor={editor} />
     </div>
