@@ -5,7 +5,34 @@ import StarterKit from "@tiptap/starter-kit";
 import TaskList from "@tiptap/extension-task-list";
 import TaskItem from "@tiptap/extension-task-item";
 import { Table, TableRow, TableCell, TableHeader } from "@tiptap/extension-table";
+import { Mark, mergeAttributes } from "@tiptap/core";
 import { useCallback, useState } from "react";
+
+const StatusColor = Mark.create({
+  name: "statusColor",
+  addAttributes() {
+    return {
+      class: {
+        default: null,
+        parseHTML: (element: HTMLElement) => element.getAttribute("class"),
+        renderHTML: (attributes: Record<string, string>) => {
+          if (!attributes.class) return {};
+          return { class: attributes.class };
+        },
+      },
+    };
+  },
+  parseHTML() {
+    return [
+      { tag: "span.status-green" },
+      { tag: "span.status-yellow" },
+      { tag: "span.status-red" },
+    ];
+  },
+  renderHTML({ HTMLAttributes }: { HTMLAttributes: Record<string, string> }) {
+    return ["span", mergeAttributes(HTMLAttributes), 0];
+  },
+});
 
 interface MeetingEditorProps {
   content: string;
@@ -170,6 +197,7 @@ export default function MeetingEditor({ content, onChange }: MeetingEditorProps)
       TableRow,
       TableCell,
       TableHeader,
+      StatusColor,
     ],
     content,
     onUpdate: ({ editor }) => {
