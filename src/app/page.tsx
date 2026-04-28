@@ -18,8 +18,7 @@ async function getRecentProcesses() {
         updatedAt: processes.updatedAt,
       })
       .from(processes)
-      .orderBy(desc(processes.updatedAt))
-      .limit(12);
+      .orderBy(desc(processes.updatedAt));
 
     const withTags = await Promise.all(
       results.map(async (p) => {
@@ -85,7 +84,9 @@ export default async function Home() {
       {/* Recent Processes with Category Filter/Sort */}
       <section className="mb-12">
         <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {recentProcesses.length > 0 ? "Recent Processes" : "Getting Started"}
+          {recentProcesses.length > 0
+            ? `Processes (${recentProcesses.length})`
+            : "Getting Started"}
         </h2>
         {recentProcesses.length > 0 ? (
           <CategoryFilter processes={recentProcesses} />
