@@ -26,6 +26,141 @@ const DEFAULT_ATTENDEES = [
   "Williams",
 ];
 
+const DEFAULT_TEMPLATE = `
+<p>Refer to: <a href="https://industrialsystems.live">industrialsystems.live</a> for SOPs, hints, issues, resolutions.</p>
+
+<hr>
+
+<h2>PART 1 — ALL HANDS</h2>
+
+<h3>Safety</h3>
+
+<p><strong>Incidents / Near Misses:</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<p><strong>Required Follow-Ups:</strong></p>
+<ul data-type="taskList">
+<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label></li>
+</ul>
+
+<p><strong>Safety Status:</strong> <span class="status-green">Green</span></p>
+
+<hr>
+
+<h3>SOP of the Week</h3>
+<p><strong>Topic:</strong> </p>
+<p><strong>Link:</strong> <a href="https://industrialsystems.live">industrialsystems.live</a></p>
+<p><em>Notes:</em></p>
+<ul>
+<li></li>
+</ul>
+
+<hr>
+
+<h3>Opportunities</h3>
+<p><strong>Tracker:</strong> <a href="https://airtable.com/appn62PVFcjNdTbiN/tblpZMgRZq8MVJaGi/viwysDxfAwwmCY91x?blocks=bip2AzL24UVXZXDVV">Open Airtable Tracker</a></p>
+
+<p><strong>Discussion Notes:</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<p><strong>Possible Award / Pending Award:</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<hr>
+
+<h3>Engineering Check-In</h3>
+
+<p><strong>1. Are we on track or falling behind anywhere?</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<p><strong>2. Are engineering releases on time vs. project schedules?</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<p><strong>3. Current Constraints:</strong></p>
+
+<table>
+<tr><th>Project</th><th>Owner</th><th>Constraint / Action</th><th>Due Date</th></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<p><strong>4. Resources or Issues?</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<p><strong>Drawing Logs / Revisions This Week:</strong></p>
+<ul data-type="taskList">
+<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span></span></label></li>
+</ul>
+
+<p><strong>Engineering Status:</strong> <span class="status-green">Green</span></p>
+<p><strong>Shop Status:</strong> Current lead time: ~6+ wks</p>
+
+<p><em>Engineers &amp; Optional Attendees Adjourn:</em></p>
+
+<hr>
+
+<h2>PART 2 — PM / LEADERSHIP</h2>
+
+<h3>Project Status</h3>
+
+<table>
+<tr><th>Project</th><th>Owner</th><th>Status / Action</th><th>Due Date</th></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<p><em>Comments:</em></p>
+<ul>
+<li></li>
+</ul>
+
+<hr>
+
+<h3>Financials</h3>
+
+<p><strong>Over/Under:</strong> <span class="status-green">Green</span></p>
+<p><strong>Cash Flow:</strong> <span class="status-green">Green</span></p>
+
+<table>
+<tr><th>Item / Project</th><th>Owner</th><th>Required</th><th>Due Date</th></tr>
+<tr><td></td><td></td><td></td><td></td></tr>
+</table>
+
+<hr>
+
+<h3>Tracker Reviews</h3>
+<p><strong>Dashboard:</strong> <a href="https://happy-water-0ea27651e.7.azurestaticapps.net/">Open Project Dashboard</a></p>
+
+<ul data-type="taskList">
+<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span>Airport Tracker Review</span></label></li>
+<li data-type="taskItem" data-checked="false"><label><input type="checkbox"><span>F&amp;B Tracker Review</span></label></li>
+</ul>
+
+<p><strong>Issues Identified:</strong></p>
+<ul>
+<li></li>
+</ul>
+
+<hr>
+
+<h3>Hot Items / Action Items</h3>
+
+<table>
+<tr><th>#</th><th>Item</th><th>Owner</th><th>Required Update</th><th>Due Date</th></tr>
+<tr><td>1</td><td></td><td></td><td></td><td></td></tr>
+</table>
+`.trim();
+
 interface LastMeeting {
   id: number;
   date: string;
@@ -34,6 +169,12 @@ interface LastMeeting {
   facilitator: string | null;
   attendees: string[];
   content: string;
+}
+
+function stripKilledRows(html: string): string {
+  // Remove table rows that contain "killed" (case-insensitive)
+  // Matches <tr>...</tr> where content includes "killed"
+  return html.replace(/<tr>(?:(?!<\/tr>).)*?[Kk]illed(?:(?!<\/tr>).)*?<\/tr>/g, "");
 }
 
 function MeetingForm() {
@@ -46,7 +187,7 @@ function MeetingForm() {
   const [facilitator, setFacilitator] = useState("Eddy");
   const [attendees, setAttendees] = useState<string[]>(DEFAULT_ATTENDEES);
   const [newAttendee, setNewAttendee] = useState("");
-  const [content, setContent] = useState("");
+  const [content, setContent] = useState(DEFAULT_TEMPLATE);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [lastMeeting, setLastMeeting] = useState<LastMeeting | null>(null);
@@ -58,7 +199,6 @@ function MeetingForm() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
-          // Get full content of most recent meeting
           fetch(`/api/meetings/${data[0].id}`)
             .then((r) => r.json())
             .then((full) => setLastMeeting(full))
@@ -71,20 +211,26 @@ function MeetingForm() {
   const copyFromLast = () => {
     if (!lastMeeting) return;
 
-    // Uncheck all checkboxes in the copied content
-    const unchecked = lastMeeting.content
+    // Uncheck all checkboxes and strip killed items
+    let copied = lastMeeting.content
       .replace(/data-checked="true"/g, 'data-checked="false"')
       .replace(/checked="checked"/g, "")
       .replace(/checked>/g, ">");
 
-    setContent(unchecked);
+    copied = stripKilledRows(copied);
+
+    setContent(copied);
     setTime(lastMeeting.time || "9:30 AM");
     setLocation(lastMeeting.location || "Keystone + Teams");
     setFacilitator(lastMeeting.facilitator || "Eddy");
     if (lastMeeting.attendees?.length > 0) {
       setAttendees(lastMeeting.attendees);
     }
-    // Force re-mount of editor with new content
+    setEditorKey((k) => k + 1);
+  };
+
+  const useTemplate = () => {
+    setContent(DEFAULT_TEMPLATE);
     setEditorKey((k) => k + 1);
   };
 
@@ -96,7 +242,7 @@ function MeetingForm() {
 
   const addAttendee = () => {
     const name = newAttendee.trim();
-    if (name && !DEFAULT_ATTENDEES.includes(name) && !attendees.includes(name)) {
+    if (name && !attendees.includes(name)) {
       setAttendees((prev) => [...prev, name]);
       setNewAttendee("");
     }
@@ -144,15 +290,28 @@ function MeetingForm() {
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
           New Meeting Notes
         </h1>
-        {lastMeeting && (
+        <div className="flex gap-2">
           <button
             type="button"
-            onClick={copyFromLast}
-            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
+            onClick={useTemplate}
+            className="px-4 py-2 bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/50 text-sm font-medium transition-colors border border-blue-300 dark:border-blue-600"
           >
-            Copy from {new Date(lastMeeting.date + "T12:00:00").toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+            Fresh Template
           </button>
-        )}
+          {lastMeeting && (
+            <button
+              type="button"
+              onClick={copyFromLast}
+              className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 text-sm font-medium transition-colors border border-gray-300 dark:border-gray-600"
+            >
+              Copy from{" "}
+              {new Date(lastMeeting.date + "T12:00:00").toLocaleDateString(
+                "en-US",
+                { month: "short", day: "numeric" }
+              )}
+            </button>
+          )}
+        </div>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -255,7 +414,7 @@ function MeetingForm() {
                   addAttendee();
                 }
               }}
-              placeholder="Add guest..."
+              placeholder="Add new attendee..."
               className={`${inputClass} max-w-xs`}
             />
             <button
@@ -263,7 +422,7 @@ function MeetingForm() {
               onClick={addAttendee}
               className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium"
             >
-              +
+              + Add
             </button>
           </div>
         </div>
