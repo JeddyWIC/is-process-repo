@@ -56,6 +56,12 @@ export default function RootLayout({
                   Meetings
                 </Link>
                 <Link
+                  href="/framework"
+                  className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
+                >
+                  Framework
+                </Link>
+                <Link
                   href="/search"
                   className="text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white text-sm font-medium"
                 >

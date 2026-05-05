@@ -54,6 +54,23 @@ export const attachments = sqliteTable("attachments", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const riskItems = sqliteTable("risk_items", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  type: text("type").notNull(), // Engineering, Supervision, Tradesmen, Project Management, Quality Control, Punch List Management, RFI Management, Schedule Management
+  title: text("title").notNull(),
+  description: text("description"), // The "Deeper Dive"
+  effects: text("effects"), // JSON array: Delays, Efficiency, Rework, Material, Time, Cost, Risk
+  phases: text("phases").notNull(), // JSON array: BID, PRECON, CONSTRUCTION, COMMISSIONING
+  notes: text("notes"), // Free-form additional notes
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const meetings = sqliteTable("meetings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   date: text("date").notNull(), // YYYY-MM-DD
