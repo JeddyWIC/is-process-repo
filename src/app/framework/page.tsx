@@ -14,6 +14,7 @@ async function getRiskItems() {
       ...r,
       phases: r.phases ? (JSON.parse(r.phases) as string[]) : [],
       effects: r.effects ? (JSON.parse(r.effects) as string[]) : [],
+      tags: r.tags ? (JSON.parse(r.tags) as string[]) : [],
     }));
   } catch {
     return [];
@@ -33,9 +34,9 @@ export default async function FrameworkPage() {
             Project Risk Framework
           </h1>
           <p className="text-gray-600 dark:text-gray-300 max-w-3xl">
-            A phased framework that helps PMs and engineers foresee issues at
-            the right time. Each item is mapped to the project lifecycle
-            phase(s) where it should be addressed.
+            A phased roadmap of risks &amp; gotchas, soup-to-nuts. Read top to
+            bottom for a new opportunity, or search for a specific topic to
+            jump straight to the relevant items and SOPs.
           </p>
         </div>
         <Link

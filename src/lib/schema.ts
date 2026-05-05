@@ -61,6 +61,7 @@ export const riskItems = sqliteTable("risk_items", {
   description: text("description"), // The "Deeper Dive"
   effects: text("effects"), // JSON array: Delays, Efficiency, Rework, Material, Time, Cost, Risk
   phases: text("phases").notNull(), // JSON array: BID, PRECON, CONSTRUCTION, COMMISSIONING
+  tags: text("tags"), // JSON array of free-form keywords for search
   notes: text("notes"), // Free-form additional notes
   sortOrder: integer("sort_order").notNull().default(0),
   createdAt: text("created_at")

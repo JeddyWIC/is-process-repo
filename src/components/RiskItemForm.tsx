@@ -34,6 +34,7 @@ export interface RiskItemFormData {
   description: string;
   effects: string[];
   phases: string[];
+  tags: string[];
   notes: string;
 }
 
@@ -49,6 +50,8 @@ export default function RiskItemForm({ initial, mode }: Props) {
   const [description, setDescription] = useState(initial?.description || "");
   const [effects, setEffects] = useState<string[]>(initial?.effects || []);
   const [phases, setPhases] = useState<string[]>(initial?.phases || []);
+  const [tags, setTags] = useState<string[]>(initial?.tags || []);
+  const [tagInput, setTagInput] = useState("");
   const [notes, setNotes] = useState(initial?.notes || "");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -63,6 +66,18 @@ export default function RiskItemForm({ initial, mode }: Props) {
     setEffects((prev) =>
       prev.includes(e) ? prev.filter((x) => x !== e) : [...prev, e]
     );
+  };
+
+  const addTag = () => {
+    const t = tagInput.trim().toLowerCase();
+    if (t && !tags.includes(t)) {
+      setTags([...tags, t]);
+    }
+    setTagInput("");
+  };
+
+  const removeTag = (t: string) => {
+    setTags(tags.filter((x) => x !== t));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -86,7 +101,7 @@ export default function RiskItemForm({ initial, mode }: Props) {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, title, description, effects, phases, notes }),
+        body: JSON.stringify({ type, title, description, effects, phases, tags, notes }),
       });
       if (!res.ok) {
         const data = await res.json();
@@ -216,6 +231,53 @@ export default function RiskItemForm({ initial, mode }: Props) {
               {e}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Tags */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Tags / Keywords — for search (e.g. &ldquo;bag tags&rdquo;, &ldquo;RFIs&rdquo;, &ldquo;commissioning&rdquo;)
+        </label>
+        <div className="flex flex-wrap gap-2 mb-2">
+          {tags.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200"
+            >
+              #{t}
+              <button
+                type="button"
+                onClick={() => removeTag(t)}
+                className="text-blue-500 hover:text-blue-700 dark:hover:text-blue-100"
+                aria-label={`Remove ${t}`}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={tagInput}
+            onChange={(e) => setTagInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                addTag();
+              }
+            }}
+            placeholder="Add tag and press Enter..."
+            className={`${inputClass} max-w-sm`}
+          />
+          <button
+            type="button"
+            onClick={addTag}
+            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium"
+          >
+            + Add
+          </button>
         </div>
       </div>
 

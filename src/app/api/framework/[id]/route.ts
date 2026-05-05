@@ -27,6 +27,7 @@ export async function GET(
       ...item,
       phases: item.phases ? JSON.parse(item.phases) : [],
       effects: item.effects ? JSON.parse(item.effects) : [],
+      tags: item.tags ? JSON.parse(item.tags) : [],
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });
@@ -44,7 +45,7 @@ export async function PUT(
     const { id } = await params;
     const numId = parseInt(id, 10);
     const body = await req.json();
-    const { type, title, description, effects, phases, notes, sortOrder } = body;
+    const { type, title, description, effects, phases, tags, notes, sortOrder } = body;
     if (!type || !title || !phases || !Array.isArray(phases) || phases.length === 0) {
       return NextResponse.json(
         { error: "type, title, and at least one phase are required" },
@@ -59,6 +60,7 @@ export async function PUT(
         description: description || null,
         effects: effects ? JSON.stringify(effects) : null,
         phases: JSON.stringify(phases),
+        tags: tags && Array.isArray(tags) && tags.length > 0 ? JSON.stringify(tags) : null,
         notes: notes || null,
         sortOrder: sortOrder ?? 0,
         updatedAt: new Date().toISOString(),
@@ -69,6 +71,7 @@ export async function PUT(
       ...updated,
       phases: JSON.parse(updated.phases),
       effects: updated.effects ? JSON.parse(updated.effects) : [],
+      tags: updated.tags ? JSON.parse(updated.tags) : [],
     });
   } catch (error) {
     return NextResponse.json({ error: String(error) }, { status: 500 });

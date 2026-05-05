@@ -28,6 +28,7 @@ export default function EditRiskItemPage({
           description: data.description || "",
           effects: data.effects || [],
           phases: data.phases || [],
+          tags: data.tags || [],
           notes: data.notes || "",
         });
       })

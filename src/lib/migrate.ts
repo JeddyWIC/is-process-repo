@@ -51,6 +51,7 @@ export async function migrate(url?: string, authToken?: string) {
       description TEXT,
       effects TEXT,
       phases TEXT NOT NULL,
+      tags TEXT,
       notes TEXT,
       sort_order INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL,
@@ -68,6 +69,13 @@ export async function migrate(url?: string, authToken?: string) {
       updated_at TEXT NOT NULL
     );
   `);
+
+  // Idempotent ALTER for adding tags column to existing risk_items tables.
+  try {
+    await client.execute("ALTER TABLE risk_items ADD COLUMN tags TEXT");
+  } catch {
+    // Column already exists — safe to ignore.
+  }
 
   console.log("Migration complete");
 }
