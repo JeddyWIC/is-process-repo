@@ -296,32 +296,28 @@ export default function FrameworkView({ items }: { items: RiskItem[] }) {
             className="absolute left-4 top-2 bottom-2 w-0.5 bg-gradient-to-b from-blue-400 via-purple-400 via-amber-400 to-green-400 hidden sm:block"
             aria-hidden
           />
-          <div className="space-y-10">
+          <div className="space-y-6">
             {PHASES.map((phase) => {
               const phaseItems = byPhase[phase.key];
               if (!phaseItems || phaseItems.length === 0) return null;
               return (
                 <section key={phase.key} className="relative sm:pl-12">
-                  {/* Phase marker */}
-                  <div className="flex items-center gap-3 mb-4 sm:absolute sm:left-0 sm:top-0 sm:flex-col sm:gap-1 sm:items-start">
-                    <span
-                      className={`w-8 h-8 rounded-full ${phase.dot} flex items-center justify-center text-white font-bold shadow-md sm:absolute sm:-left-0 sm:top-0`}
-                      aria-hidden
-                    >
-                      ●
-                    </span>
-                  </div>
-                  <div className="mb-4">
+                  {/* Phase marker dot on the timeline */}
+                  <span
+                    className={`hidden sm:flex absolute left-2.5 top-2 w-3 h-3 rounded-full ${phase.dot} ring-2 ring-white dark:ring-gray-900 shadow`}
+                    aria-hidden
+                  />
+                  <div className="mb-2">
                     <h2
-                      className={`inline-block text-lg font-bold px-4 py-1.5 rounded-lg ${phase.color}`}
+                      className={`inline-block text-base font-bold px-3 py-1 rounded ${phase.color}`}
                     >
                       {phase.label}
                     </h2>
-                    <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">
+                    <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                       {phaseItems.length} item{phaseItems.length === 1 ? "" : "s"}
                     </span>
                   </div>
-                  <ol className="space-y-3">
+                  <ol className="space-y-1.5">
                     {phaseItems.map((item, idx) => (
                       <RiskRow
                         key={item.id}
@@ -357,10 +353,6 @@ function RiskRow({
   onTagClick: (t: string) => void;
 }) {
   const [open, setOpen] = useState(false);
-  const hasMoreContent =
-    (item.description && item.description.length > 140) ||
-    item.notes ||
-    item.effects.length > 0;
 
   return (
     <li
@@ -369,47 +361,65 @@ function RiskRow({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="w-full text-left p-4 flex items-start gap-3"
+        className="w-full text-left px-3 py-2.5 flex items-center gap-3"
       >
-        <span className="flex-shrink-0 w-7 h-7 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 text-sm font-semibold flex items-center justify-center">
+        <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-xs font-semibold flex items-center justify-center">
           {index}
         </span>
-        <div className="flex-1 min-w-0">
-          <div className="flex items-start justify-between gap-2 flex-wrap">
-            <h3 className="font-semibold text-gray-900 dark:text-white">
-              {highlight(item.title, search)}
-            </h3>
-            <span className="text-xs text-gray-400 uppercase tracking-wide">
-              {item.type}
-            </span>
+
+        {/* Title */}
+        <h3 className="font-semibold text-gray-900 dark:text-white text-base flex-shrink-0">
+          {highlight(item.title, search)}
+        </h3>
+
+        {/* Risks — always visible, the headline scan target */}
+        {item.effects.length > 0 && (
+          <div className="flex flex-wrap gap-1 items-center min-w-0">
+            {item.effects.map((e) => (
+              <span
+                key={e}
+                className={`inline-block px-1.5 py-0.5 rounded text-[11px] font-medium ${
+                  EFFECT_COLORS[e] ||
+                  "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+                }`}
+              >
+                {e}
+              </span>
+            ))}
           </div>
+        )}
 
-          {/* Phase chips for cross-phase items */}
-          {item.phases.length > 1 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {PHASES.filter((p) => item.phases.includes(p.key)).map((p) => (
-                <span
-                  key={p.key}
-                  className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${p.color}`}
-                >
-                  {p.label}
-                </span>
-              ))}
-            </div>
-          )}
+        {/* Cross-phase indicator (only if item spans more than this phase) */}
+        {item.phases.length > 1 && (
+          <div className="hidden sm:flex flex-wrap gap-1 ml-auto">
+            {PHASES.filter(
+              (p) => item.phases.includes(p.key) && p.key !== phase.key
+            ).map((p) => (
+              <span
+                key={p.key}
+                className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${p.color}`}
+                title={`Also relevant in ${p.label}`}
+              >
+                +{p.label.slice(0, 4)}
+              </span>
+            ))}
+          </div>
+        )}
 
-          {/* Description preview (always shown) */}
+        <span className="text-xs text-gray-400 ml-auto sm:ml-2 flex-shrink-0">
+          {open ? "▴" : "▾"}
+        </span>
+      </button>
+
+      {/* Expanded details */}
+      {open && (
+        <div className="px-3 pb-3 pt-1 border-t border-gray-100 dark:border-gray-700">
           {item.description && (
-            <p
-              className={`text-sm text-gray-600 dark:text-gray-300 mt-2 ${
-                open ? "" : "line-clamp-2"
-              }`}
-            >
+            <p className="text-sm text-gray-700 dark:text-gray-300 mt-2">
               {highlight(item.description, search)}
             </p>
           )}
 
-          {/* Tags row */}
           {item.tags.length > 0 && (
             <div className="flex flex-wrap gap-1 mt-2">
               {item.tags.map((t) => (
@@ -427,49 +437,26 @@ function RiskRow({
             </div>
           )}
 
-          {/* Effects + notes only when expanded */}
-          {open && (
-            <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-2">
-              {item.effects.length > 0 && (
-                <div className="flex flex-wrap gap-1 items-center">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    Risks if missed:
-                  </span>
-                  {item.effects.map((e) => (
-                    <span
-                      key={e}
-                      className={`inline-block px-1.5 py-0.5 rounded text-xs font-medium ${
-                        EFFECT_COLORS[e] ||
-                        "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
-                      }`}
-                    >
-                      {e}
-                    </span>
-                  ))}
-                </div>
-              )}
-              {item.notes && (
-                <p className="text-xs italic text-gray-500 dark:text-gray-400">
-                  {highlight(item.notes, search)}
-                </p>
-              )}
-              <Link
-                href={`/framework/${item.id}/edit`}
-                onClick={(e) => e.stopPropagation()}
-                className="inline-block text-xs text-blue-600 dark:text-blue-400 hover:underline mt-1"
-              >
-                Edit item →
-              </Link>
-            </div>
+          {item.notes && (
+            <p className="text-xs italic text-gray-500 dark:text-gray-400 mt-2">
+              {highlight(item.notes, search)}
+            </p>
           )}
 
-          {hasMoreContent && (
-            <span className="text-xs text-gray-400 mt-2 inline-block">
-              {open ? "▴ less" : "▾ more"}
+          <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-50 dark:border-gray-700/50">
+            <span className="text-[10px] text-gray-400 uppercase tracking-wide">
+              {item.type}
             </span>
-          )}
+            <Link
+              href={`/framework/${item.id}/edit`}
+              onClick={(e) => e.stopPropagation()}
+              className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+            >
+              Edit →
+            </Link>
+          </div>
         </div>
-      </button>
+      )}
     </li>
   );
 }
