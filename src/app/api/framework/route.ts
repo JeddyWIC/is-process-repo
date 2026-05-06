@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { db } from "@/lib/db";
 import { riskItems } from "@/lib/schema";
 import { asc } from "drizzle-orm";
+import { isAuthenticated } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -23,13 +23,8 @@ export async function GET() {
   }
 }
 
-async function isAuthorized() {
-  const cookieStore = await cookies();
-  return cookieStore.get("is-auth")?.value === "1";
-}
-
 export async function POST(req: Request) {
-  if (!(await isAuthorized())) {
+  if (!(await isAuthenticated())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   try {
