@@ -72,6 +72,16 @@ export const riskItems = sqliteTable("risk_items", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const attendeeList = sqliteTable("attendee_list", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull().unique(),
+  isOptional: integer("is_optional", { mode: "boolean" }).notNull().default(false),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const meetings = sqliteTable("meetings", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   date: text("date").notNull(), // YYYY-MM-DD

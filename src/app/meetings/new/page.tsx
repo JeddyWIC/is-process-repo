@@ -8,7 +8,8 @@ import MeetingEditor from "@/components/MeetingEditor";
 const inputClass =
   "w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-900 dark:text-white bg-white dark:bg-gray-700";
 
-const DEFAULT_ATTENDEES = [
+// Fallback list used only if the API hasn't been seeded yet.
+const FALLBACK_ATTENDEES = [
   "Ahlgrim",
   "Benett (Optional)",
   "Carlson",
@@ -25,6 +26,17 @@ const DEFAULT_ATTENDEES = [
   "Wells",
   "Williams",
 ];
+
+interface PermanentAttendee {
+  id: number;
+  name: string;
+  isOptional: boolean;
+  sortOrder: number;
+}
+
+function formatPermanentName(a: PermanentAttendee): string {
+  return a.isOptional ? `${a.name} (Optional)` : a.name;
+}
 
 const DEFAULT_TEMPLATE = `
 <p>Refer to: <a href="https://industrialsystems.live">industrialsystems.live</a> for SOPs, hints, issues, resolutions.</p>
@@ -185,13 +197,31 @@ function MeetingForm() {
   const [time, setTime] = useState("9:30 AM");
   const [location, setLocation] = useState("Keystone + Teams");
   const [facilitator, setFacilitator] = useState("Eddy");
-  const [attendees, setAttendees] = useState<string[]>(DEFAULT_ATTENDEES);
+  const [permanentAttendees, setPermanentAttendees] = useState<PermanentAttendee[]>([]);
+  const [permanentAttendeesLoaded, setPermanentAttendeesLoaded] = useState(false);
+  const [attendees, setAttendees] = useState<string[]>(FALLBACK_ATTENDEES);
   const [newAttendee, setNewAttendee] = useState("");
+  const [newAttendeeOptional, setNewAttendeeOptional] = useState(false);
   const [content, setContent] = useState(DEFAULT_TEMPLATE);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [lastMeeting, setLastMeeting] = useState<LastMeeting | null>(null);
   const [editorKey, setEditorKey] = useState(0);
+  const [manageMode, setManageMode] = useState(false);
+
+  // Fetch permanent attendee list from DB
+  useEffect(() => {
+    fetch("/api/attendees")
+      .then((r) => r.json())
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setPermanentAttendees(data);
+          setAttendees(data.map(formatPermanentName));
+        }
+        setPermanentAttendeesLoaded(true);
+      })
+      .catch(() => setPermanentAttendeesLoaded(true));
+  }, []);
 
   // Fetch last meeting for "copy" feature
   useEffect(() => {
@@ -207,6 +237,10 @@ function MeetingForm() {
       })
       .catch(() => {});
   }, []);
+
+  const permanentNames = permanentAttendees.map(formatPermanentName);
+  const fallbackInUse = !permanentAttendeesLoaded || permanentAttendees.length === 0;
+  const knownNames = fallbackInUse ? FALLBACK_ATTENDEES : permanentNames;
 
   const copyFromLast = () => {
     if (!lastMeeting) return;
@@ -240,11 +274,56 @@ function MeetingForm() {
     );
   };
 
-  const addAttendee = () => {
+  const addGuest = () => {
     const name = newAttendee.trim();
     if (name && !attendees.includes(name)) {
       setAttendees((prev) => [...prev, name]);
       setNewAttendee("");
+      setNewAttendeeOptional(false);
+    }
+  };
+
+  const addPermanent = async () => {
+    const name = newAttendee.trim();
+    if (!name) return;
+    setError("");
+    try {
+      const res = await fetch("/api/attendees", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, isOptional: newAttendeeOptional }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to add permanent attendee");
+      }
+      const created = (await res.json()) as PermanentAttendee;
+      const formatted = formatPermanentName(created);
+      setPermanentAttendees((prev) => [...prev, created]);
+      setAttendees((prev) =>
+        prev.includes(formatted) ? prev : [...prev, formatted]
+      );
+      setNewAttendee("");
+      setNewAttendeeOptional(false);
+    } catch (err) {
+      setError(String(err));
+    }
+  };
+
+  const removePermanent = async (id: number, formatted: string) => {
+    if (!confirm(`Remove "${formatted}" from the permanent attendee list? They'll no longer appear by default in new meetings.`)) {
+      return;
+    }
+    try {
+      const res = await fetch(`/api/attendees/${id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to remove");
+      }
+      setPermanentAttendees((prev) => prev.filter((a) => a.id !== id));
+      setAttendees((prev) => prev.filter((n) => n !== formatted));
+    } catch (err) {
+      setError(String(err));
     }
   };
 
@@ -372,58 +451,139 @@ function MeetingForm() {
 
         {/* Attendees */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            Attendees
-          </label>
-          <div className="flex flex-wrap gap-2">
-            {DEFAULT_ATTENDEES.map((name) => (
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              Attendees
+            </label>
+            {!fallbackInUse && (
               <button
-                key={name}
                 type="button"
-                onClick={() => toggleAttendee(name)}
-                className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
-                  attendees.includes(name)
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 line-through"
-                }`}
+                onClick={() => setManageMode((m) => !m)}
+                className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
               >
-                {name}
+                {manageMode ? "Done managing" : "Manage permanent list"}
               </button>
-            ))}
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {/* Permanent attendees from DB (or fallback hardcoded list) */}
+            {fallbackInUse
+              ? FALLBACK_ATTENDEES.map((name) => (
+                  <button
+                    key={name}
+                    type="button"
+                    onClick={() => toggleAttendee(name)}
+                    className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                      attendees.includes(name)
+                        ? "bg-blue-600 text-white"
+                        : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 line-through"
+                    }`}
+                  >
+                    {name}
+                  </button>
+                ))
+              : permanentAttendees.map((a) => {
+                  const formatted = formatPermanentName(a);
+                  const isActive = attendees.includes(formatted);
+                  return (
+                    <span key={a.id} className="inline-flex items-stretch">
+                      <button
+                        type="button"
+                        onClick={() => toggleAttendee(formatted)}
+                        className={`px-3 py-1 ${
+                          manageMode ? "rounded-l-full" : "rounded-full"
+                        } text-sm font-medium transition-colors ${
+                          isActive
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-400 line-through"
+                        }`}
+                      >
+                        {formatted}
+                      </button>
+                      {manageMode && (
+                        <button
+                          type="button"
+                          onClick={() => removePermanent(a.id, formatted)}
+                          className="px-2 rounded-r-full bg-red-500 hover:bg-red-600 text-white text-sm font-medium"
+                          title="Remove from permanent list"
+                          aria-label="Remove from permanent list"
+                        >
+                          &times;
+                        </button>
+                      )}
+                    </span>
+                  );
+                })}
+
+            {/* One-time guests (not in permanent list) */}
             {attendees
-              .filter((a) => !DEFAULT_ATTENDEES.includes(a))
+              .filter((a) => !knownNames.includes(a))
               .map((name) => (
                 <button
                   key={name}
                   type="button"
                   onClick={() => toggleAttendee(name)}
                   className="px-3 py-1 rounded-full text-sm font-medium bg-green-600 text-white"
+                  title="Guest — click to remove from this meeting"
                 >
                   {name} &times;
                 </button>
               ))}
           </div>
-          <div className="flex gap-2 mt-2">
-            <input
-              type="text"
-              value={newAttendee}
-              onChange={(e) => setNewAttendee(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  addAttendee();
-                }
-              }}
-              placeholder="Add new attendee..."
-              className={`${inputClass} max-w-xs`}
-            />
-            <button
-              type="button"
-              onClick={addAttendee}
-              className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 text-sm font-medium"
-            >
-              + Add
-            </button>
+
+          <div className="mt-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+            <div className="text-xs text-gray-600 dark:text-gray-400 mb-2">
+              Add an attendee
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                type="text"
+                value={newAttendee}
+                onChange={(e) => setNewAttendee(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    addPermanent();
+                  }
+                }}
+                placeholder="Name..."
+                className={`${inputClass} max-w-xs`}
+              />
+              <label className="flex items-center gap-1.5 text-sm text-gray-700 dark:text-gray-300">
+                <input
+                  type="checkbox"
+                  checked={newAttendeeOptional}
+                  onChange={(e) => setNewAttendeeOptional(e.target.checked)}
+                />
+                Optional
+              </label>
+              <button
+                type="button"
+                onClick={addPermanent}
+                disabled={!newAttendee.trim()}
+                className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
+                title="Save to permanent list — appears every week"
+              >
+                + Permanent
+              </button>
+              <button
+                type="button"
+                onClick={addGuest}
+                disabled={!newAttendee.trim()}
+                className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 text-sm font-medium"
+                title="One-time only for this meeting"
+              >
+                + Guest
+              </button>
+            </div>
+            {fallbackInUse && (
+              <p className="mt-2 text-xs text-amber-600 dark:text-amber-400">
+                Permanent attendee list not yet seeded in the database — using
+                fallback. POST to <code>/api/attendees/seed</code> to enable
+                permanent additions.
+              </p>
+            )}
           </div>
         </div>
 
