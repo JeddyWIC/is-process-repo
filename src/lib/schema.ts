@@ -54,8 +54,24 @@ export const attachments = sqliteTable("attachments", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const frameworks = sqliteTable("frameworks", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  name: text("name").notNull(),
+  description: text("description"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+  updatedAt: text("updated_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const riskItems = sqliteTable("risk_items", {
   id: integer("id").primaryKey({ autoIncrement: true }),
+  frameworkId: integer("framework_id").references(() => frameworks.id, {
+    onDelete: "cascade",
+  }),
   type: text("type").notNull(), // Engineering, Supervision, Tradesmen, Project Management, Quality Control, Punch List Management, RFI Management, Schedule Management
   title: text("title").notNull(),
   description: text("description"), // The "Deeper Dive"

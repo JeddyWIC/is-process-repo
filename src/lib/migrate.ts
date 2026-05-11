@@ -44,6 +44,14 @@ export async function migrate(url?: string, authToken?: string) {
       data TEXT NOT NULL,
       created_at TEXT NOT NULL
     );
+    CREATE TABLE IF NOT EXISTS frameworks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      description TEXT,
+      sort_order INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
     CREATE TABLE IF NOT EXISTS risk_items (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       type TEXT NOT NULL,
@@ -83,6 +91,39 @@ export async function migrate(url?: string, authToken?: string) {
   } catch {
     // Column already exists — safe to ignore.
   }
+
+  // Idempotent ALTER for adding framework_id column.
+  try {
+    await client.execute(
+      "ALTER TABLE risk_items ADD COLUMN framework_id INTEGER REFERENCES frameworks(id) ON DELETE CASCADE"
+    );
+  } catch {
+    // Column already exists — safe to ignore.
+  }
+
+  // Ensure a default framework exists ("BHS (Turnkey) Integrator")
+  // and back-fill any risk_items missing a framework_id.
+  const now = new Date().toISOString();
+  const existing = await client.execute("SELECT id, name FROM frameworks LIMIT 1");
+  let defaultId: number;
+  if (existing.rows.length === 0) {
+    const insert = await client.execute({
+      sql: "INSERT INTO frameworks (name, description, sort_order, created_at, updated_at) VALUES (?, ?, 0, ?, ?) RETURNING id",
+      args: [
+        "BHS (Turnkey) Integrator",
+        "Baggage handling system turnkey integration — the original IS framework.",
+        now,
+        now,
+      ],
+    });
+    defaultId = Number(insert.rows[0].id);
+  } else {
+    defaultId = Number(existing.rows[0].id);
+  }
+  await client.execute({
+    sql: "UPDATE risk_items SET framework_id = ? WHERE framework_id IS NULL",
+    args: [defaultId],
+  });
 
   console.log("Migration complete");
 }

@@ -1,15 +1,26 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { riskItems } from "@/lib/schema";
-import { asc } from "drizzle-orm";
+import { asc, eq } from "drizzle-orm";
 import { isAuthenticated } from "@/lib/auth";
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const items = await db
-      .select()
-      .from(riskItems)
-      .orderBy(asc(riskItems.sortOrder), asc(riskItems.id));
+    const url = new URL(req.url);
+    const frameworkIdParam = url.searchParams.get("frameworkId");
+    const frameworkId = frameworkIdParam ? parseInt(frameworkIdParam, 10) : null;
+
+    const items = frameworkId
+      ? await db
+          .select()
+          .from(riskItems)
+          .where(eq(riskItems.frameworkId, frameworkId))
+          .orderBy(asc(riskItems.sortOrder), asc(riskItems.id))
+      : await db
+          .select()
+          .from(riskItems)
+          .orderBy(asc(riskItems.sortOrder), asc(riskItems.id));
+
     return NextResponse.json(
       items.map((i) => ({
         ...i,
@@ -29,7 +40,7 @@ export async function POST(req: Request) {
   }
   try {
     const body = await req.json();
-    const { type, title, description, effects, phases, tags, notes, sortOrder } = body;
+    const { type, title, description, effects, phases, tags, notes, sortOrder, frameworkId } = body;
     if (!type || !title || !phases || !Array.isArray(phases) || phases.length === 0) {
       return NextResponse.json(
         { error: "type, title, and at least one phase are required" },
@@ -40,6 +51,7 @@ export async function POST(req: Request) {
     const [created] = await db
       .insert(riskItems)
       .values({
+        frameworkId: frameworkId ?? null,
         type,
         title,
         description: description || null,
