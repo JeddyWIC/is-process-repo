@@ -9,7 +9,9 @@ export async function POST(request: NextRequest) {
     response.cookies.set("is_process_auth", "true", {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
+      // "none" so the cookie is sent on cross-origin fetches from the
+      // Compliance Dashboard. Requires secure: true in production.
+      sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: "/",
     });
