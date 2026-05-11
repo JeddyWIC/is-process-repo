@@ -1,119 +1,52 @@
-import SearchBar from "@/components/SearchBar";
-import TagCloud from "@/components/TagCloud";
-import CategoryFilter from "@/components/CategoryFilter";
+const DASHBOARD_URL = "https://happy-water-0ea27651e.7.azurestaticapps.net";
 
-async function getRecentProcesses() {
-  try {
-    const { db } = await import("@/lib/db");
-    const { processes, tags, processTags } = await import("@/lib/schema");
-    const { desc, eq } = await import("drizzle-orm");
+export const dynamic = "force-static";
 
-    const results = await db
-      .select({
-        id: processes.id,
-        title: processes.title,
-        author: processes.author,
-        category: processes.category,
-        createdAt: processes.createdAt,
-        updatedAt: processes.updatedAt,
-      })
-      .from(processes)
-      .orderBy(desc(processes.updatedAt));
-
-    const withTags = await Promise.all(
-      results.map(async (p) => {
-        const pTags = await db
-          .select({ name: tags.name })
-          .from(tags)
-          .innerJoin(processTags, eq(processTags.tagId, tags.id))
-          .where(eq(processTags.processId, p.id));
-        return { ...p, tags: pTags.map((t) => t.name) };
-      })
-    );
-
-    return withTags;
-  } catch {
-    return [];
-  }
-}
-
-async function getPopularTags() {
-  try {
-    const { db } = await import("@/lib/db");
-    const { tags, processTags } = await import("@/lib/schema");
-    const { eq, sql } = await import("drizzle-orm");
-
-    return await db
-      .select({
-        id: tags.id,
-        name: tags.name,
-        count: sql<number>`count(${processTags.processId})`.as("count"),
-      })
-      .from(tags)
-      .leftJoin(processTags, eq(processTags.tagId, tags.id))
-      .groupBy(tags.id)
-      .orderBy(sql`count DESC`)
-      .limit(30);
-  } catch {
-    return [];
-  }
-}
-
-export const dynamic = "force-dynamic";
-
-export default async function Home() {
-  const [recentProcesses, popularTags] = await Promise.all([
-    getRecentProcesses(),
-    getPopularTags(),
-  ]);
-
+export default function Home() {
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
-      {/* Hero */}
-      <div className="text-center mb-10">
-        <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-3">
-          Industrial Systems Process Repository
+    <div className="min-h-[80vh] flex items-center justify-center px-4">
+      <div className="max-w-xl w-full text-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl p-10 shadow-sm">
+        <div className="inline-flex w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/40 items-center justify-center mb-4">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-blue-600 dark:text-blue-300"
+          >
+            <path d="M5 12h14" />
+            <path d="m12 5 7 7-7 7" />
+          </svg>
+        </div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+          We&rsquo;ve moved
         </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
-          Document, share, and discover processes and lessons learned across
-          Food &amp; Beverage and Airport projects.
+        <p className="text-gray-600 dark:text-gray-300 mb-6">
+          The Industrial Systems Process Repository, Meeting Notes, and Project
+          Lifecycles are now part of the&nbsp;
+          <strong>Industrial Systems Dashboard</strong>. Bookmark this new home
+          base for everything in one place.
         </p>
-        <SearchBar />
+        <a
+          href={DASHBOARD_URL}
+          className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+        >
+          Go to Industrial Systems Dashboard →
+        </a>
+        <p className="mt-6 text-xs text-gray-500 dark:text-gray-400">
+          <a
+            href={DASHBOARD_URL}
+            className="font-mono break-all hover:underline"
+          >
+            {DASHBOARD_URL.replace("https://", "")}
+          </a>
+        </p>
       </div>
-
-      {/* Recent Processes with Category Filter/Sort */}
-      <section className="mb-12">
-        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-          {recentProcesses.length > 0
-            ? `Processes (${recentProcesses.length})`
-            : "Getting Started"}
-        </h2>
-        {recentProcesses.length > 0 ? (
-          <CategoryFilter processes={recentProcesses} />
-        ) : (
-          <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              No processes documented yet. Be the first to share your knowledge!
-            </p>
-            <a
-              href="/process/new"
-              className="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-            >
-              Create First Process
-            </a>
-          </div>
-        )}
-      </section>
-
-      {/* Tag Cloud — now below processes */}
-      {popularTags.length > 0 && (
-        <section>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 text-center">
-            Popular Tags
-          </h2>
-          <TagCloud tags={popularTags} />
-        </section>
-      )}
     </div>
   );
 }
