@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { riskItems } from "@/lib/schema";
 import { eq } from "drizzle-orm";
-import { isAuthenticated } from "@/lib/auth";
 
 export async function GET(
   _req: Request,
@@ -33,9 +32,7 @@ export async function PUT(
   req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Risk Roadmaps are open for team collaboration — no auth gate on writes.
   try {
     const { id } = await params;
     const numId = parseInt(id, 10);
@@ -78,9 +75,7 @@ export async function DELETE(
   _req: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Risk Roadmaps are open for team collaboration — no auth gate on writes.
   try {
     const { id } = await params;
     const numId = parseInt(id, 10);

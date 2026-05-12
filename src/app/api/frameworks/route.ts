@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { frameworks, riskItems } from "@/lib/schema";
 import { asc, eq, sql } from "drizzle-orm";
-import { isAuthenticated } from "@/lib/auth";
 
 export async function GET() {
   try {
@@ -27,9 +26,7 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  if (!(await isAuthenticated())) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  // Risk Roadmaps are open for team collaboration — no auth gate on writes.
   try {
     const body = await req.json();
     const name = (body.name || "").trim();
